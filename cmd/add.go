@@ -31,7 +31,6 @@ func Add(c *cli.Context) error {
 		protoRoot = "./"
 	}
 	protoFiles := c.StringSlice("protofiles")
-	fmt.Println(protoFiles)
 
 	err := os.MkdirAll(testDir, 0744)
 	if err != nil {
