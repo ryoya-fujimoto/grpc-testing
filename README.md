@@ -22,7 +22,7 @@ grpctl add FirstTest
 
 `FirstTest` is the test case name. This command generate cuelang file like this.
 
-```yml
+```
 {
 	name: "FirstTest"
 	Input: {
@@ -53,7 +53,7 @@ grpctl add --proto_path example/app --protofiles example/app/*.proto FirstTest
 
 This command generate below cue file.
 
-```yml
+```
 {
 	name: "FirstTest"
 	Input: {
@@ -89,7 +89,7 @@ This command generate below cue file.
 
 Edit your test case file for testing grpc server, like below (write cases param only).
 
-```yml
+```
 cases: [...Test] & [{
   method: "UserService.GetUser"
   input: GetUserRequest & {
