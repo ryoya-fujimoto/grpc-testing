@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"io"
+	"net/http"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -12,6 +14,11 @@ import (
 )
 
 var r cue.Runtime
+
+var wellKnowns = map[string]string{
+	"google/protobuf/timestamp.proto": "https://raw.githubusercontent.com/protocolbuffers/protobuf/master/src/google/protobuf/timestamp.proto",
+}
+var wellKnownRoot = "./tmp/wellknowns"
 
 type testCase struct {
 	Method string
@@ -33,11 +40,16 @@ func loadSchemasFromProto(protoRoot string, globs []string) (*cue.Instance, erro
 		return nil, fmt.Errorf("no protofiles")
 	}
 
+	err := downloadWellKnowns()
+	if err != nil {
+		return nil, err
+	}
+
 	instances := []*cue.Instance{}
 	for _, protoFile := range protoFiles {
 		p, _ := filepath.Abs(protoFile)
 		file, err := protobuf.Extract(p, nil, &protobuf.Config{
-			Paths: []string{protoRoot},
+			Paths: []string{protoRoot, wellKnownRoot},
 		})
 		if err != nil {
 			return nil, err
@@ -61,4 +73,57 @@ func readCueInstance(filename string) (*cue.Instance, error) {
 	defer file.Close()
 
 	return r.Compile(filename, file)
+}
+
+func downloadWellKnowns() error {
+	targets := map[string]string{}
+	for key, url := range wellKnowns {
+		_, err := os.Stat(filepath.Join(wellKnownRoot, key))
+		if err != nil {
+			targets[key] = url
+		}
+	}
+
+	if len(targets) == 0 {
+		return nil
+	}
+	fmt.Println("download well-known types")
+	for key, url := range targets {
+		p := filepath.Join(wellKnownRoot, key)
+		fmt.Printf("download %s from %s\n", key, url)
+
+		if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+			return err
+		}
+
+		if err := downloadFile(url, p); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func downloadFile(url string, filepath string) error {
+	// Create the file
+	out, err := os.Create(filepath)
+	if err != nil {
+			return err
+	}
+	defer out.Close()
+
+	// Get the data
+	resp, err := http.Get(url)
+	if err != nil {
+			return err
+	}
+	defer resp.Body.Close()
+
+	// Write the body to file
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+			return err
+	}
+
+	return nil
 }
