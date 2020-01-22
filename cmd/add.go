@@ -23,8 +23,9 @@ func Add(c *cli.Context) error {
 		cli.ShowCommandHelpAndExit(c, "add", 1)
 		return nil
 	}
-	testName := c.Args().Get(0)
-	outPath := filepath.Join(testDir, strcase.ToLowerCamel(testName)+".cue")
+	targetName := filepath.Base(c.Args().Get(0))
+	targetDir := filepath.Dir(c.Args().Get(0))
+	outPath := filepath.Join(testDir, targetDir, strcase.ToLowerCamel(targetName)+".cue")
 
 	protoRoot := c.String("proto_path")
 	if protoRoot == "" {
@@ -32,26 +33,26 @@ func Add(c *cli.Context) error {
 	}
 	protoFiles := c.StringSlice("protofiles")
 
-	err := os.MkdirAll(testDir, 0744)
-	if err != nil {
-		return err
+	_, err := os.Stat(outPath)
+	if err == nil {
+		fmt.Printf("%s is already exists", outPath)
+		return nil
 	}
 
-	_, err = os.Stat(outPath)
-	if err == nil {
-		fmt.Printf("%s is already exists", testName)
-		return nil
+	err = os.MkdirAll(filepath.Dir(outPath), 0744)
+	if err != nil {
+		return err
 	}
 
 	tpl := template.New("schema")
 	tpl.Parse(testCaseSchema)
 	m := map[string]string{
-		"Name": testName,
+		"Name": targetName,
 	}
 	var base bytes.Buffer
 	_ = tpl.Execute(&base, m)
 
-	ins, err := r.Compile(strcase.ToLowerCamel(testName)+".cue", base.String())
+	ins, err := r.Compile(strcase.ToLowerCamel(targetName)+".cue", base.String())
 	if err != nil {
 		return err
 	}
