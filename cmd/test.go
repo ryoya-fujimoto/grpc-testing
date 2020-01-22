@@ -28,8 +28,8 @@ func Test(c *cli.Context) error {
 		cli.ShowCommandHelpAndExit(c, "run", 1)
 		return nil
 	}
-	testName := c.Args().Get(1)
-	testFile := filepath.Join(testDir, strcase.ToLowerCamel(testName)+".cue")
+	targetName, targetDir := extractTarget(c.Args().Get(1))
+	testFile := filepath.Join(testDir, targetDir, strcase.ToLowerCamel(targetName)+".cue")
 
 	ins, err := readCueInstance(testFile)
 	if err != nil {
@@ -69,10 +69,10 @@ func Test(c *cli.Context) error {
 		}
 	}
 	if len(errs) == 0 {
-		fmt.Println("OK:", testName)
+		fmt.Println("OK:", targetName)
 	} else {
 		cli.Exit("NG", 1)
-		fmt.Println("NG:", testName)
+		fmt.Println("NG:", targetName)
 		for _, err := range errs {
 			fmt.Println(err)
 		}

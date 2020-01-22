@@ -23,8 +23,7 @@ func Add(c *cli.Context) error {
 		cli.ShowCommandHelpAndExit(c, "add", 1)
 		return nil
 	}
-	targetName := filepath.Base(c.Args().Get(0))
-	targetDir := filepath.Dir(c.Args().Get(0))
+	targetName, targetDir := extractTarget(c.Args().Get(0))
 	outPath := filepath.Join(testDir, targetDir, strcase.ToLowerCamel(targetName)+".cue")
 
 	protoRoot := c.String("proto_path")

@@ -27,8 +27,8 @@ func Run(c *cli.Context) error {
 		cli.ShowCommandHelpAndExit(c, "run", 1)
 		return nil
 	}
-	testName := c.Args().Get(1)
-	testFile := filepath.Join(testDir, strcase.ToLowerCamel(testName)+".cue")
+	targetName, targetDir := extractTarget(c.Args().Get(1))
+	testFile := filepath.Join(testDir, targetDir, strcase.ToLowerCamel(targetName)+".cue")
 
 	ins, err := readCueInstance(testFile)
 	if err != nil {
