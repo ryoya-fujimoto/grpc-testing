@@ -93,6 +93,7 @@ Test :: {
 }
 cases: [...Test] & [
 	{
+		name: ""
 		method: ""
 		input: {}
 		output: {}
