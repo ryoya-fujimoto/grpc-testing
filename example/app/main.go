@@ -1,10 +1,11 @@
 package main
 
 import (
-	"google.golang.org/grpc/reflection"
 	"context"
 	"log"
 	"net"
+
+	"google.golang.org/grpc/reflection"
 
 	"google.golang.org/grpc"
 
