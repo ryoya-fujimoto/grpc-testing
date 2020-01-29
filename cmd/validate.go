@@ -14,9 +14,8 @@ func Validate(c *cli.Context) error {
 		cli.ShowCommandHelpAndExit(c, "validate", 1)
 		return nil
 	}
-	_, testFilePattern := extractTarget(c.Args().Get(1))
 
-	testFiles, err := zglob.Glob(testFilePattern)
+	testFiles, err := zglob.Glob(c.Args().Get(0))
 	if err != nil {
 		return err
 	}

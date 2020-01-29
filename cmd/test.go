@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/mattn/go-zglob"
+
 	"github.com/kylelemons/godebug/pretty"
 
 	"cuelang.org/go/encoding/gocode/gocodec"
@@ -26,16 +28,35 @@ func Test(c *cli.Context) error {
 		cli.ShowCommandHelpAndExit(c, "run", 1)
 		return nil
 	}
-	_, testFile := extractTarget(c.Args().Get(1))
+	testFiles, err := zglob.Glob(c.Args().Get(1))
+	if err != nil {
+		return err
+	}
 
 	targetTestName := ""
 	if c.NArg() > 2 {
 		targetTestName = c.Args().Get(2)
 	}
 
+	errs := []string{}
+	for _, testFile := range testFiles {
+		testFails, err := test(serverName, testFile, targetTestName)
+		if err != nil {
+			return err
+		}
+		errs = append(errs, testFails...)
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("test failed")
+	}
+	return nil
+}
+
+func test(serverHost, testFile, testName string) ([]string, error) {
 	ins, err := readCueInstance(testFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	insVal, _ := ins.Value().Struct()
@@ -46,13 +67,13 @@ func Test(c *cli.Context) error {
 	testCases := []testCase{}
 	err = codec.Encode(cases.Value, &testCases)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	fmt.Println(testFile)
 	errs := []string{}
 	for _, c := range testCases {
-		if targetTestName != "" && targetTestName != c.Name {
+		if testName != "" && testName != c.Name {
 			continue
 		}
 		tName := c.Name
@@ -60,16 +81,16 @@ func Test(c *cli.Context) error {
 			tName = c.Method
 		}
 		res := &bytes.Buffer{}
-		invokeRPC(context.Background(), serverName, c.Method, c.Input, res)
+		invokeRPC(context.Background(), serverHost, c.Method, c.Input, res)
 
 		expectJSON := map[string]interface{}{}
 		resJSON := map[string]interface{}{}
 
 		if err := json.Unmarshal(c.Output, &expectJSON); err != nil {
-			return err
+			return nil, err
 		}
 		if err := json.Unmarshal(res.Bytes(), &resJSON); err != nil {
-			return err
+			return nil, err
 		}
 
 		if !reflect.DeepEqual(expectJSON, resJSON) {
@@ -82,5 +103,5 @@ func Test(c *cli.Context) error {
 		}
 	}
 
-	return fmt.Errorf("test failed")
+	return errs, nil
 }

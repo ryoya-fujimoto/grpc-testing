@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/mattn/go-zglob"
+
 	"cuelang.org/go/encoding/gocode/gocodec"
 
 	"github.com/urfave/cli/v2"
@@ -23,13 +25,26 @@ func Run(c *cli.Context) error {
 		cli.ShowCommandHelpAndExit(c, "run", 1)
 		return nil
 	}
-	_, testFile := extractTarget(c.Args().Get(1))
+	testFiles, err := zglob.Glob(c.Args().Get(1))
+	if err != nil {
+		return err
+	}
 
 	targetTestName := ""
 	if c.NArg() > 2 {
 		targetTestName = c.Args().Get(2)
 	}
 
+	for _, testFile := range testFiles {
+		if err := run(serverName, testFile, targetTestName); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func run(serverHost, testFile, testName string) error {
 	ins, err := readCueInstance(testFile)
 	if err != nil {
 		return err
@@ -48,13 +63,13 @@ func Run(c *cli.Context) error {
 
 	fmt.Println(testFile)
 	for _, c := range testCases {
-		if targetTestName != "" && targetTestName != c.Name {
+		if testName != "" && testName != c.Name {
 			continue
 		}
 		fmt.Printf("\ttest name: %s\n", c.Name)
 		fmt.Printf("\tmethod: %s\n", c.Method)
 		res := &bytes.Buffer{}
-		invokeRPC(context.Background(), serverName, c.Method, c.Input, res)
+		invokeRPC(context.Background(), serverHost, c.Method, c.Input, res)
 		fmt.Println("\toutput:", addTabToNewline(res.String(), 2))
 	}
 
