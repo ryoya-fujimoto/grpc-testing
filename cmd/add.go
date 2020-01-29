@@ -87,6 +87,7 @@ const testCaseSchema = `name: "{{.Name}}"
 Input: {}
 Output: {}
 Test :: {
+	name: string
 	method: string
 	input: Input
 	output: Output
