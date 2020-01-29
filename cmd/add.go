@@ -10,7 +10,6 @@ import (
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/format"
-	"github.com/iancoleman/strcase"
 	"github.com/urfave/cli/v2"
 )
 
@@ -23,8 +22,7 @@ func Add(c *cli.Context) error {
 		cli.ShowCommandHelpAndExit(c, "add", 1)
 		return nil
 	}
-	targetName, targetDir := extractTarget(c.Args().Get(0))
-	outPath := filepath.Join(testDir, targetDir, strcase.ToLowerCamel(targetName)+".cue")
+	targetName, outPath := extractTarget(c.Args().Get(1), testDir)
 
 	protoRoot := c.String("proto_path")
 	if protoRoot == "" {
@@ -51,7 +49,7 @@ func Add(c *cli.Context) error {
 	var base bytes.Buffer
 	_ = tpl.Execute(&base, m)
 
-	ins, err := r.Compile(strcase.ToLowerCamel(targetName)+".cue", base.String())
+	ins, err := r.Compile(targetName+".cue", base.String())
 	if err != nil {
 		return err
 	}

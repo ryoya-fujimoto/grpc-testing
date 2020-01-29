@@ -5,11 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"path/filepath"
 	"reflect"
 
 	"cuelang.org/go/encoding/gocode/gocodec"
-	"github.com/iancoleman/strcase"
 	"github.com/urfave/cli/v2"
 )
 
@@ -28,8 +26,7 @@ func Test(c *cli.Context) error {
 		cli.ShowCommandHelpAndExit(c, "run", 1)
 		return nil
 	}
-	targetName, targetDir := extractTarget(c.Args().Get(1))
-	testFile := filepath.Join(testDir, targetDir, strcase.ToLowerCamel(targetName)+".cue")
+	targetName, testFile := extractTarget(c.Args().Get(1), testDir)
 
 	ins, err := readCueInstance(testFile)
 	if err != nil {
