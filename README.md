@@ -17,24 +17,29 @@ go get github.com/ryoya-fujimoto/grpc-testing
 First, create a test file using grpc-testing.
 
 ```bash
-grpc-testing add FirstTest 
+grpc-testing add tests/first_test
 ```
 
-`FirstTest` is the test case name. This command generate cuelang file like this.
+`first_test` is the test file name. This command generate cuelang file like this.
 
+tests/first_test.cue
 ```
 {
-	name: "FirstTest"
+	name: "first_test"
 	Input: {
 	}
 	Output: {
 	}
 	Test :: {
-		method: string
-		input:  Input
-		output: Output
+		name:         string
+		method:       string
+		proto?:       string
+		import_path?: string
+		input:        Input
+		output:       Output
 	}
 	cases: [...Test] & [{
+		name:   ""
 		method: ""
 		input: {
 		}
@@ -55,17 +60,21 @@ This command generate below cue file.
 
 ```
 {
-	name: "FirstTest"
+	name: "first_test"
 	Input: {
 	}
 	Output: {
 	}
 	Test :: {
-		method: string
-		input:  Input
-		output: Output
+		name:         string
+		method:       string
+		proto?:       string
+		import_path?: string
+		input:        Input
+		output:       Output
 	}
 	cases: [...Test] & [{
+		name:   ""
 		method: ""
 		input: {
 		}
@@ -91,14 +100,15 @@ Edit your test case file for testing grpc server, like below (write cases param 
 
 ```
 cases: [...Test] & [{
-  method: "UserService.GetUser"
-  input: GetUserRequest & {
-    id: 5
-  }
-  output: {
-    id: "5"
-    name: "John Smith"
-  }
+	name:   "GetUser"
+	method: "UserService.GetUser"
+	input: GetUserRequest & {
+		id: 5
+ 	}
+ 	output: {
+		id: 5
+		name: "John Smith"
+	}
 }]
 ```
 
@@ -107,15 +117,41 @@ Now, you can request to grpc server using input object.
 `grpc-testing run` prints response from server.
 
 ```bash
-$ grpc-testing run localhost:8080 FirstTest
-output: {
-  "id": "5",
-  "name": "John Smith"
-}
+$ grpc-testing run localhost:8080 tests/first_test.cue
+tests/first_test.cue
+        test name: GetUser
+        method: UserService.GetUser
+        output: {
+                  "id": "5",
+                  "name": "John Smith"
+                }
 ```
 
 `grpc-testing test` compares between response and output parameter.
 ```bash
-$ grpc-testing test localhost:8080 FirstTest
-OK: addTest
+$ grpc-testing test localhost:8080 tests/first_test.cue
+tests/first_test.cue
+        OK: GetUser
+```
+
+### Test your grpc server using protofile, not gRPC reflection API
+
+If your grpc server does not implement gRPC reflection API, you can use protofiles in the same way as the grpcurl `-proto` and `-import-path` options.
+
+add `proto` and `import_path` to test case setting:
+
+```
+cases: [...Test] & [{
+	name:   "GetUser"
+	method: "UserService.GetUser"
+	proto: ["./example/app/app.proto"]
+	import_path: ["./example/app/"]
+	input: GetUserRequest & {
+		id: 5
+	}
+	output: {
+		id: 5
+		name: "John Smith"
+	}
+}]
 ```
