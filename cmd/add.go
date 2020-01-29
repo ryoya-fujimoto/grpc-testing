@@ -86,6 +86,8 @@ Output: {}
 Test :: {
 	name: string
 	method: string
+	proto?: string
+	import_path?: string
 	input: Input
 	output: Output
 }

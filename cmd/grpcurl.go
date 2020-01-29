@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/fullstorydev/grpcurl"
 	"github.com/jhump/protoreflect/grpcreflect"
@@ -17,7 +18,7 @@ import (
 	reflectpb "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 )
 
-func invokeRPC(ctx context.Context, serverName, methodName string, reqData []byte, res io.Writer) error {
+func invokeRPC(ctx context.Context, serverName, methodName string, protoFiles, importPath multiString, reqData []byte, res io.Writer) error {
 	dial := func() *grpc.ClientConn {
 		var creds credentials.TransportCredentials
 		var opts []grpc.DialOption
@@ -34,11 +35,35 @@ func invokeRPC(ctx context.Context, serverName, methodName string, reqData []byt
 	var descSource grpcurl.DescriptorSource
 	var refClient *grpcreflect.Client
 
-	md := grpcurl.MetadataFromHeaders([]string{})
-	refCtx := metadata.NewOutgoingContext(ctx, md)
-	cc = dial()
-	refClient = grpcreflect.NewClient(refCtx, reflectpb.NewServerReflectionClient(cc))
-	descSource = grpcurl.DescriptorSourceFromServer(ctx, refClient)
+	if len(protoFiles) > 0 {
+		var err error
+		descSource, err = grpcurl.DescriptorSourceFromProtoFiles(importPath, protoFiles...)
+		if err != nil {
+			return fmt.Errorf("create desc src: %w", err)
+		}
+	} else {
+		md := grpcurl.MetadataFromHeaders([]string{})
+		refCtx := metadata.NewOutgoingContext(ctx, md)
+		cc = dial()
+		refClient = grpcreflect.NewClient(refCtx, reflectpb.NewServerReflectionClient(cc))
+		descSource = grpcurl.DescriptorSourceFromServer(ctx, refClient)
+	}
+
+	reset := func() {
+		if refClient != nil {
+			refClient.Reset()
+			refClient = nil
+		}
+		if cc != nil {
+			cc.Close()
+			cc = nil
+		}
+	}
+	defer reset()
+
+	if cc == nil {
+		cc = dial()
+	}
 
 	var in io.Reader
 	in = bytes.NewReader(reqData)
@@ -59,5 +84,16 @@ func invokeRPC(ctx context.Context, serverName, methodName string, reqData []byt
 		return fmt.Errorf("invalid response code: %s", h.Status.Code().String())
 	}
 
+	return nil
+}
+
+type multiString []string
+
+func (s *multiString) String() string {
+	return strings.Join(*s, ",")
+}
+
+func (s *multiString) Set(value string) error {
+	*s = append(*s, value)
 	return nil
 }

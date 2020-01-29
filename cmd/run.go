@@ -68,8 +68,12 @@ func run(serverHost, testFile, testName string) error {
 		}
 		fmt.Printf("\ttest name: %s\n", c.Name)
 		fmt.Printf("\tmethod: %s\n", c.Method)
+
 		res := &bytes.Buffer{}
-		invokeRPC(context.Background(), serverHost, c.Method, c.Input, res)
+		err = invokeRPC(context.Background(), serverHost, c.Method, c.Proto, c.ImportPath, c.Input, res)
+		if err != nil {
+			return fmt.Errorf("invoke grpc: %w", err)
+		}
 		fmt.Println("\toutput:", addTabToNewline(res.String(), 2))
 	}
 

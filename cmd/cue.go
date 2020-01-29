@@ -21,10 +21,12 @@ var wellKnowns = map[string]string{
 var wellKnownRoot = "./tmp/wellknowns"
 
 type testCase struct {
-	Name   string
-	Method string
-	Input  json.RawMessage
-	Output json.RawMessage
+	Name       string
+	Method     string
+	Proto      []string
+	ImportPath []string `json:"import_path"`
+	Input      json.RawMessage
+	Output     json.RawMessage
 }
 
 func loadSchemasFromProto(protoRoot string, globs []string) (*cue.Instance, error) {
