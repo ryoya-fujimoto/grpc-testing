@@ -48,10 +48,13 @@ func Run(c *cli.Context) error {
 		return err
 	}
 
+	fmt.Println(testFile)
 	for _, c := range testCases {
 		if targetTestName != "" && targetTestName != c.Name {
 			continue
 		}
+		fmt.Printf("test name: %s\n", c.Name)
+		fmt.Printf("method: %s\n", c.Method)
 		res := &bytes.Buffer{}
 		invokeRPC(context.Background(), serverName, c.Method, c.Input, res)
 		fmt.Println("output:", res.String())
