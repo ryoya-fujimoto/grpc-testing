@@ -4,13 +4,13 @@ import (
 	"log"
 	"os"
 
-	"github.com/ryoya-fujimoto/grpctl/cmd"
+	"github.com/ryoya-fujimoto/grpc-testing/cmd"
 	"github.com/urfave/cli/v2"
 )
 
 func main() {
 	app := cli.NewApp()
-	app.Name = "grpctl"
+	app.Name = "grpc-testing"
 	app.Usage = "The scenario based grpc runner and tester tool"
 
 	app.Commands = []*cli.Command{

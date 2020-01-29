@@ -8,7 +8,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/ryoya-fujimoto/grpctl/example/app/pb"
+	"github.com/ryoya-fujimoto/grpc-testing/example/app/pb"
 )
 
 const port = ":8080"

@@ -1,4 +1,4 @@
-module github.com/ryoya-fujimoto/grpctl/example/app
+module github.com/ryoya-fujimoto/grpc-testing/example/app
 
 go 1.13
 
