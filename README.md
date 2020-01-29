@@ -33,8 +33,8 @@ tests/first_test.cue
 	Test :: {
 		name:         string
 		method:       string
-		proto?:       string
-		import_path?: string
+		proto?: [...string]
+		import_path?: [...string]
 		input:        Input
 		output:       Output
 	}
@@ -68,8 +68,8 @@ This command generate below cue file.
 	Test :: {
 		name:         string
 		method:       string
-		proto?:       string
-		import_path?: string
+		proto?: [...string]
+		import_path?: [...string]
 		input:        Input
 		output:       Output
 	}
