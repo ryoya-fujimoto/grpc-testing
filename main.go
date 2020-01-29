@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"os"
 
 	"github.com/ryoya-fujimoto/grpc-testing/cmd"
@@ -40,20 +40,21 @@ func main() {
 			Name:      "run",
 			Usage:     "Requests grpc to server using input in test case file, and output response.",
 			Action:    cmd.Run,
-			ArgsUsage: "`hostname` `test file` `test name`",
+			ArgsUsage: "`hostname` `test file` `test name(can use glob)`",
 			Flags:     []cli.Flag{},
 		},
 		{
 			Name:      "test",
 			Usage:     "Requests grpc to server using input in test case file, and compare between response and output parameter.",
 			Action:    cmd.Test,
-			ArgsUsage: "`hostname` `test file` `test name`",
+			ArgsUsage: "`hostname` `test file` `test name(can use glob)`",
 			Flags:     []cli.Flag{},
 		},
 	}
 
 	err := app.Run(os.Args)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 }

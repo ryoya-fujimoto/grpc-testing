@@ -78,11 +78,11 @@ func Test(c *cli.Context) error {
 			ej, _ := json.Marshal(expectJSON)
 			rj, _ := json.Marshal(resJSON)
 			errs = append(errs, fmt.Sprintf("expect: %s, but: %s", string(ej), string(rj)))
-			fmt.Printf("\tNG: %s\n%s", tName, pretty.Compare(expectJSON, resJSON))
+			fmt.Printf("\tNG: %s\n%s\n", tName, pretty.Compare(expectJSON, resJSON))
 		} else {
 			fmt.Printf("\tOK: %s\n", tName)
 		}
 	}
 
-	return nil
+	return fmt.Errorf("test failed")
 }
