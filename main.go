@@ -34,20 +34,20 @@ func main() {
 			Name:      "validate",
 			Usage:     "validate test case files with schemas",
 			Action:    cmd.Validate,
-			ArgsUsage: "[(optional) test name]",
+			ArgsUsage: "`test file(can use glob)`",
 		},
 		{
 			Name:      "run",
 			Usage:     "Requests grpc to server using input in test case file, and output response.",
 			Action:    cmd.Run,
-			ArgsUsage: "`hostname` `test file` `test name(can use glob)`",
+			ArgsUsage: "`hostname` `test file(can use glob)` `[(optional) test name]`",
 			Flags:     []cli.Flag{},
 		},
 		{
 			Name:      "test",
 			Usage:     "Requests grpc to server using input in test case file, and compare between response and output parameter.",
 			Action:    cmd.Test,
-			ArgsUsage: "`hostname` `test file` `test name(can use glob)`",
+			ArgsUsage: "`hostname` `test file(can use glob)` `[(optional) test name]`",
 			Flags:     []cli.Flag{},
 		},
 	}

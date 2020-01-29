@@ -15,15 +15,13 @@ import (
 
 // Add test case file
 func Add(c *cli.Context) error {
-	testDir := "tests"
-
 	if c.NArg() == 0 {
 		fmt.Println("Please specify test case name")
 		cli.ShowCommandHelpAndExit(c, "add", 1)
 		return nil
 	}
 
-	targetName, outPath := extractTarget(c.Args().Get(0), testDir)
+	targetName, outPath := extractTarget(c.Args().Get(0))
 
 	protoRoot := c.String("proto_path")
 	if protoRoot == "" {

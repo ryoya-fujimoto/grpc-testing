@@ -12,8 +12,6 @@ import (
 
 // Run requests grpc to server using input in test case file.
 func Run(c *cli.Context) error {
-	testDir := "tests"
-
 	if c.NArg() == 0 {
 		fmt.Println("Please specify server name")
 		cli.ShowCommandHelpAndExit(c, "run", 1)
@@ -25,7 +23,7 @@ func Run(c *cli.Context) error {
 		cli.ShowCommandHelpAndExit(c, "run", 1)
 		return nil
 	}
-	_, testFile := extractTarget(c.Args().Get(1), testDir)
+	_, testFile := extractTarget(c.Args().Get(1))
 
 	targetTestName := ""
 	if c.NArg() > 2 {

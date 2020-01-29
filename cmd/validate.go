@@ -2,22 +2,21 @@ package cmd
 
 import (
 	"fmt"
-	"path/filepath"
 
-	"github.com/iancoleman/strcase"
 	"github.com/mattn/go-zglob"
 	"github.com/urfave/cli/v2"
 )
 
 // Validate validates test files with schemas.
 func Validate(c *cli.Context) error {
-	testName := "*"
-	if c.NArg() > 0 {
-		testName = strcase.ToLowerCamel(c.Args().First())
+	if c.NArg() == 0 {
+		fmt.Println("Please specify test file")
+		cli.ShowCommandHelpAndExit(c, "validate", 1)
+		return nil
 	}
-	fName := testName + ".cue"
+	_, testFilePattern := extractTarget(c.Args().Get(1))
 
-	testFiles, err := zglob.Glob(filepath.Join("tests", fName))
+	testFiles, err := zglob.Glob(testFilePattern)
 	if err != nil {
 		return err
 	}
