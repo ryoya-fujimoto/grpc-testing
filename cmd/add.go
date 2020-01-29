@@ -22,7 +22,8 @@ func Add(c *cli.Context) error {
 		cli.ShowCommandHelpAndExit(c, "add", 1)
 		return nil
 	}
-	targetName, outPath := extractTarget(c.Args().Get(1), testDir)
+
+	targetName, outPath := extractTarget(c.Args().Get(0), testDir)
 
 	protoRoot := c.String("proto_path")
 	if protoRoot == "" {

@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/kylelemons/godebug/pretty"
+
 	"cuelang.org/go/encoding/gocode/gocodec"
 	"github.com/urfave/cli/v2"
 )
@@ -26,7 +28,12 @@ func Test(c *cli.Context) error {
 		cli.ShowCommandHelpAndExit(c, "run", 1)
 		return nil
 	}
-	targetName, testFile := extractTarget(c.Args().Get(1), testDir)
+	_, testFile := extractTarget(c.Args().Get(1), testDir)
+
+	targetTestName := ""
+	if c.NArg() > 2 {
+		targetTestName = c.Args().Get(2)
+	}
 
 	ins, err := readCueInstance(testFile)
 	if err != nil {
@@ -44,8 +51,16 @@ func Test(c *cli.Context) error {
 		return err
 	}
 
+	fmt.Println(testFile)
 	errs := []string{}
 	for _, c := range testCases {
+		if targetTestName != "" && targetTestName != c.Name {
+			continue
+		}
+		tName := c.Name
+		if tName == "" {
+			tName = c.Method
+		}
 		res := &bytes.Buffer{}
 		invokeRPC(context.Background(), serverName, c.Method, c.Input, res)
 
@@ -63,15 +78,9 @@ func Test(c *cli.Context) error {
 			ej, _ := json.Marshal(expectJSON)
 			rj, _ := json.Marshal(resJSON)
 			errs = append(errs, fmt.Sprintf("expect: %s, but: %s", string(ej), string(rj)))
-		}
-	}
-	if len(errs) == 0 {
-		fmt.Println("OK:", targetName)
-	} else {
-		cli.Exit("NG", 1)
-		fmt.Println("NG:", targetName)
-		for _, err := range errs {
-			fmt.Println(err)
+			fmt.Printf("\tNG: %s\n%s", tName, pretty.Compare(expectJSON, resJSON))
+		} else {
+			fmt.Printf("\tOK: %s\n", tName)
 		}
 	}
 

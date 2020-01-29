@@ -27,6 +27,11 @@ func Run(c *cli.Context) error {
 	}
 	_, testFile := extractTarget(c.Args().Get(1), testDir)
 
+	targetTestName := ""
+	if c.NArg() > 2 {
+		targetTestName = c.Args().Get(2)
+	}
+
 	ins, err := readCueInstance(testFile)
 	if err != nil {
 		return err
@@ -44,6 +49,9 @@ func Run(c *cli.Context) error {
 	}
 
 	for _, c := range testCases {
+		if targetTestName != "" && targetTestName != c.Name {
+			continue
+		}
 		res := &bytes.Buffer{}
 		invokeRPC(context.Background(), serverName, c.Method, c.Input, res)
 		fmt.Println("output:", res.String())

@@ -18,7 +18,7 @@ func main() {
 			Name:      "add",
 			Usage:     "add test case file",
 			Action:    cmd.Add,
-			ArgsUsage: "`TestName`",
+			ArgsUsage: "`test file`",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:  "proto_path",
@@ -40,14 +40,14 @@ func main() {
 			Name:      "run",
 			Usage:     "Requests grpc to server using input in test case file, and output response.",
 			Action:    cmd.Run,
-			ArgsUsage: "`hostname` `TestName`",
+			ArgsUsage: "`hostname` `test file`",
 			Flags:     []cli.Flag{},
 		},
 		{
 			Name:      "test",
 			Usage:     "Requests grpc to server using input in test case file, and compare between response and output parameter.",
 			Action:    cmd.Test,
-			ArgsUsage: "`hostname` `TestName`",
+			ArgsUsage: "`hostname` `test file`",
 			Flags:     []cli.Flag{},
 		},
 	}
