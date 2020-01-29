@@ -53,11 +53,11 @@ func Run(c *cli.Context) error {
 		if targetTestName != "" && targetTestName != c.Name {
 			continue
 		}
-		fmt.Printf("test name: %s\n", c.Name)
-		fmt.Printf("method: %s\n", c.Method)
+		fmt.Printf("\ttest name: %s\n", c.Name)
+		fmt.Printf("\tmethod: %s\n", c.Method)
 		res := &bytes.Buffer{}
 		invokeRPC(context.Background(), serverName, c.Method, c.Input, res)
-		fmt.Println("output:", res.String())
+		fmt.Println("\toutput:", addTabToNewline(res.String(), 2))
 	}
 
 	return nil
