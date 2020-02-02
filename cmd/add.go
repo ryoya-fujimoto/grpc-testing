@@ -88,6 +88,7 @@ Test :: {
 	method: string
 	proto?: [...string]
 	import_path?: [...string]
+	headers?: [string]: string
 	input: Input
 	output: Output
 }

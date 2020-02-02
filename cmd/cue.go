@@ -25,6 +25,7 @@ type testCase struct {
 	Method     string
 	Proto      []string
 	ImportPath []string `json:"import_path"`
+	Headers    map[string]string
 	Input      json.RawMessage
 	Output     json.RawMessage
 }
