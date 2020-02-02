@@ -82,7 +82,7 @@ func test(serverHost, testFile, testName string) ([]string, error) {
 		}
 
 		res := &bytes.Buffer{}
-		invokeRPC(context.Background(), serverHost, c.Method, c.Proto, c.ImportPath, c.Input, res)
+		invokeRPC(context.Background(), serverHost, c.Method, c.Headers, c.Proto, c.ImportPath, c.Input, res)
 
 		expectJSON := map[string]interface{}{}
 		resJSON := map[string]interface{}{}

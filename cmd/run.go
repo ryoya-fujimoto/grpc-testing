@@ -70,7 +70,7 @@ func run(serverHost, testFile, testName string) error {
 		fmt.Printf("\tmethod: %s\n", c.Method)
 
 		res := &bytes.Buffer{}
-		err = invokeRPC(context.Background(), serverHost, c.Method, c.Proto, c.ImportPath, c.Input, res)
+		err = invokeRPC(context.Background(), serverHost, c.Method, c.Headers, c.Proto, c.ImportPath, c.Input, res)
 		if err != nil {
 			return fmt.Errorf("invoke grpc: %w", err)
 		}
