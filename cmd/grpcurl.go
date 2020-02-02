@@ -18,7 +18,7 @@ import (
 	reflectpb "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 )
 
-func invokeRPC(ctx context.Context, serverName, methodName string, protoFiles, importPath multiString, reqData []byte, res io.Writer) error {
+func invokeRPC(ctx context.Context, serverName, methodName string, headers map[string]string, protoFiles, importPath multiString, reqData []byte, res io.Writer) error {
 	dial := func() *grpc.ClientConn {
 		var creds credentials.TransportCredentials
 		var opts []grpc.DialOption
@@ -74,7 +74,8 @@ func invokeRPC(ctx context.Context, serverName, methodName string, protoFiles, i
 	}
 	h := grpcurl.NewDefaultEventHandler(res, descSource, formatter, false)
 
-	err = grpcurl.InvokeRPC(ctx, descSource, cc, methodName, []string{}, h, rf.Next)
+	headerStr := createHeaderStr(headers)
+	err = grpcurl.InvokeRPC(ctx, descSource, cc, methodName, headerStr, h, rf.Next)
 	if err != nil {
 		return err
 	}
@@ -96,4 +97,13 @@ func (s *multiString) String() string {
 func (s *multiString) Set(value string) error {
 	*s = append(*s, value)
 	return nil
+}
+
+func createHeaderStr(h map[string]string) []string {
+	headers := make([]string, len(h))
+	for k, v := range h {
+		headers = append(headers, fmt.Sprintf("%s: %s", k, v))
+	}
+
+	return headers
 }
