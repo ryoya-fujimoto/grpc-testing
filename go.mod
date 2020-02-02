@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	cuelang.org/go v0.0.15
+	github.com/emicklei/proto v1.9.0 // indirect
 	github.com/fullstorydev/grpcurl v1.4.0
 	github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334
 	github.com/jhump/protoreflect v1.5.0
