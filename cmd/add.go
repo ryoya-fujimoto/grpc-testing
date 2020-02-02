@@ -5,11 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"text/template"
 
-	"cuelang.org/go/cue"
-	"cuelang.org/go/cue/format"
 	"github.com/urfave/cli/v2"
 )
 
@@ -35,25 +32,7 @@ func Add(c *cli.Context) error {
 		return nil
 	}
 
-	err = os.MkdirAll(filepath.Dir(outPath), 0744)
-	if err != nil {
-		return err
-	}
-
-	tpl := template.New("schema")
-	tpl.Parse(testCaseSchema)
-	m := map[string]string{
-		"Name": targetName,
-	}
-	var base bytes.Buffer
-	_ = tpl.Execute(&base, m)
-
-	ins, err := r.Compile(targetName+".cue", base.String())
-	if err != nil {
-		return err
-	}
-
-	schemas, err := loadSchemasFromProto(protoRoot, protoFiles)
+	cueImports, _, err := generateCUEModule(protoRoot, protoFiles)
 	if err != nil {
 		if err.Error() == "no protofiles" {
 			fmt.Println("No protofiles. Will not generate schemas.")
@@ -61,17 +40,46 @@ func Add(c *cli.Context) error {
 			return err
 		}
 	} else {
-		ins = cue.Merge(schemas, ins)
+		fmt.Println(cueImports)
 	}
 
-	err = ins.Value().Validate()
-	if err != nil {
-		return err
+	tpl := template.New("schema")
+	tpl.Parse(testCaseSchema)
+	m := map[string]interface{}{
+		"Name":    targetName,
+		"Imports": cueImports,
 	}
-	op := cue.Raw()
-	b, _ := format.Node(ins.Value().Syntax(op))
+	var base bytes.Buffer
+	_ = tpl.Execute(&base, m)
 
-	err = ioutil.WriteFile(outPath, b, 0644)
+	// TODO: merge non package instance
+
+	// testCUE, err := parser.ParseFile(targetName+".cue", base.String())
+	// testInstance, err := r.Parse(targetName+".cue", base.String())
+	// if err != nil {
+	// 	return err
+	// }
+	// buildIns := &build.Instance{
+	// 	Files: []*ast.File{testCUE},
+	// }
+	// testInstance, err := r.Build(buildIns)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// fmt.Println("hoge1----")
+	// if len(mergeInstances) > 0 {
+	// 	mergeInstances = append(mergeInstances, testInstance)
+	// 	testInstance = cue.Merge(mergeInstances...)
+	// }
+
+	// op := cue.Raw()
+	// b, err := format.Node(testInstance.Value().Syntax(op))
+	// if err != nil {
+	// 	return err
+	// }
+
+	err = ioutil.WriteFile(outPath, base.Bytes(), 0644)
 	if err != nil {
 		return err
 	}
@@ -80,7 +88,9 @@ func Add(c *cli.Context) error {
 	return nil
 }
 
-const testCaseSchema = `name: "{{.Name}}"
+const testCaseSchema = `{{range .Imports}}import "{{.}}"
+{{end}}
+name: "{{.Name}}"
 Input: {}
 Output: {}
 Test :: {

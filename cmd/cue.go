@@ -7,9 +7,14 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
+
+	"cuelang.org/go/cue/format"
+	"cuelang.org/go/encoding/protobuf"
+
+	"github.com/emicklei/proto"
 
 	"cuelang.org/go/cue"
-	"cuelang.org/go/encoding/protobuf"
 	"github.com/mattn/go-zglob"
 )
 
@@ -30,43 +35,167 @@ type testCase struct {
 	Output     json.RawMessage
 }
 
-func loadSchemasFromProto(protoRoot string, globs []string) (*cue.Instance, error) {
+func generateCUEModule(protoRoot string, globs []string) ([]string, []*cue.Instance, error) {
 	protoFiles := []string{}
 	for _, glob := range globs {
 		pFiles, err := zglob.Glob(glob)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		protoFiles = append(protoFiles, pFiles...)
 	}
 
 	if len(protoFiles) == 0 {
-		return nil, fmt.Errorf("no protofiles")
+		return nil, nil, fmt.Errorf("no protofiles")
 	}
 
 	err := downloadWellKnowns()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
+	}
+
+	cueImports := []string{}
+	for _, protoFile := range protoFiles {
+		pkg, _, err := extractProto(protoFile)
+		if err != nil {
+			return nil, nil, err
+		}
+		cueImports = append(cueImports, strings.ReplaceAll(pkg, ";", ":"))
+	}
+
+	moduleName := ""
+	if len(cueImports) > 0 {
+		mp := strings.Split(cueImports[0], "/")[:2]
+		moduleName = filepath.Join(mp...)
+		err := generateModuleFiles(moduleName)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	instances := []*cue.Instance{}
+	// generate cue files
 	for _, protoFile := range protoFiles {
-		p, _ := filepath.Abs(protoFile)
-		file, err := protobuf.Extract(p, nil, &protobuf.Config{
-			Paths: []string{protoRoot, wellKnownRoot},
-		})
+		ins, err := generateCUEFile(moduleName, protoRoot, protoFile)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-
-		result, err := r.CompileFile(file)
-		if err != nil {
-			return nil, err
+		if ins != nil {
+			instances = append(instances, ins)
 		}
-		instances = append(instances, result)
 	}
 
-	return cue.Merge(instances...), nil
+	return cueImports, instances, nil
+}
+
+func generateCUEFile(moduleName, protoRoot, protoFile string) (*cue.Instance, error) {
+	p := protoFile
+	if !strings.HasPrefix(p, protoRoot) {
+		p = filepath.Join(protoRoot, protoFile)
+	}
+	fmt.Printf("generate cue file from: %s\n", p)
+
+	pkg, imports, err := extractProto(p)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, imp := range imports {
+		_, ok := wellKnowns[imp]
+		if ok {
+			continue
+		}
+
+		_, err := generateCUEFile(moduleName, protoRoot, imp)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	cueFile, err := protobuf.Extract(p, nil, &protobuf.Config{
+		Paths: []string{protoRoot, wellKnownRoot},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if pkg == "" {
+		result, err := r.CompileFile(cueFile)
+		if err != nil {
+			return nil, err
+		}
+		return result, nil
+	}
+
+	outDir := strings.ReplaceAll(strings.Split(pkg, ";")[0], moduleName+"/", "")
+	err = os.MkdirAll(outDir, 0755)
+	if err != nil {
+		return nil, err
+	}
+
+	outPath := filepath.Join(outDir, filepath.Base(cueFile.Filename))
+	outFile, err := os.Create(outPath)
+	if err != nil {
+		return nil, err
+	}
+	defer outFile.Close()
+
+	b, err := format.Node(cueFile)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = outFile.Write(b)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
+}
+
+func generateModuleFiles(moduleName string) error {
+	err := os.MkdirAll("./cue.mod/pkg", 0755)
+	if err != nil {
+		return err
+	}
+	err = os.MkdirAll("./cue.mod/usr", 0755)
+	if err != nil {
+		return err
+	}
+
+	p, err := os.Create("./cue.mod/module.cue")
+	if err != nil {
+		return err
+	}
+	defer p.Close()
+
+	_, err = p.WriteString(fmt.Sprintf("module: \"%s\"", moduleName))
+	return err
+}
+
+func extractProto(filePath string) (pkgName string, imports []string, err error) {
+	r, err := os.Open(filePath)
+	if err != nil {
+		return "", nil, err
+	}
+	defer r.Close()
+
+	parser := proto.NewParser(r)
+	def, err := parser.Parse()
+	if err != nil {
+		return "", nil, err
+	}
+
+	for _, e := range def.Elements {
+		switch x := e.(type) {
+		case *proto.Option:
+			pkgName = x.Constant.Source
+		case *proto.Import:
+			imports = append(imports, x.Filename)
+		}
+	}
+
+	return pkgName, imports, nil
 }
 
 func readCueInstance(filename string) (*cue.Instance, error) {
