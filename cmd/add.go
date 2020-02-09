@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"bytes"
+	"cuelang.org/go/cue"
+	"cuelang.org/go/cue/format"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"text/template"
 
 	"github.com/urfave/cli/v2"
@@ -26,21 +27,19 @@ func Add(c *cli.Context) error {
 	}
 	protoFiles := c.StringSlice("protofiles")
 
-	_, err := os.Stat(outPath)
-	if err == nil {
-		fmt.Printf("%s is already exists", outPath)
-		return nil
-	}
+	// _, err := os.Stat(outPath)
+	// if err == nil {
+	// 	fmt.Printf("%s is already exists", outPath)
+	// 	return nil
+	// }
 
-	cueImports, _, err := generateCUEModule(protoRoot, protoFiles)
+	cueImports, mergeInstances, err := generateCUEModule(protoRoot, protoFiles)
 	if err != nil {
 		if err.Error() == "no protofiles" {
 			fmt.Println("No protofiles. Will not generate schemas.")
 		} else {
 			return err
 		}
-	} else {
-		fmt.Println(cueImports)
 	}
 
 	tpl := template.New("schema")
@@ -51,40 +50,42 @@ func Add(c *cli.Context) error {
 	}
 	var base bytes.Buffer
 	_ = tpl.Execute(&base, m)
-
-	// TODO: merge non package instance
-
-	// testCUE, err := parser.ParseFile(targetName+".cue", base.String())
-	// testInstance, err := r.Parse(targetName+".cue", base.String())
-	// if err != nil {
-	// 	return err
-	// }
-	// buildIns := &build.Instance{
-	// 	Files: []*ast.File{testCUE},
-	// }
-	// testInstance, err := r.Build(buildIns)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// fmt.Println("hoge1----")
-	// if len(mergeInstances) > 0 {
-	// 	mergeInstances = append(mergeInstances, testInstance)
-	// 	testInstance = cue.Merge(mergeInstances...)
-	// }
-
-	// op := cue.Raw()
-	// b, err := format.Node(testInstance.Value().Syntax(op))
-	// if err != nil {
-	// 	return err
-	// }
-
-	err = ioutil.WriteFile(outPath, base.Bytes(), 0644)
+	fmt.Println("hogehoge3")
+	testInstance, err := r.Compile(outPath, base.Bytes())
 	if err != nil {
 		return err
 	}
-	fmt.Println("create:", outPath)
 
+	// err = ioutil.WriteFile(outPath, base.Bytes(), 0644)
+	// if err != nil {
+	// 	return err
+	// }
+
+	fmt.Println("hogehoge1")
+	// testInstance, err := readCueInstance(outPath)
+	// if err != nil {
+	// 	return err
+	// }
+
+	fmt.Println("hogehoge2")
+	if len(mergeInstances) > 0 {
+		mergeInstances = append(mergeInstances, testInstance)
+		testInstance = cue.Merge(mergeInstances...)
+	}
+
+	op := cue.Raw()
+	b, err := format.Node(testInstance.Value().Syntax(op))
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("hogehoge3")
+	err = ioutil.WriteFile(outPath, b, 0644)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("create:", outPath)
 	return nil
 }
 

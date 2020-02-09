@@ -1,6 +1,10 @@
 package cmd
 
 import (
+	"cuelang.org/go/cue/ast"
+	"cuelang.org/go/cue/build"
+	"cuelang.org/go/cue/load"
+	"cuelang.org/go/cue/parser"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -24,6 +28,18 @@ var wellKnowns = map[string]string{
 	"google/protobuf/timestamp.proto": "https://raw.githubusercontent.com/protocolbuffers/protobuf/master/src/google/protobuf/timestamp.proto",
 }
 var wellKnownRoot = "./tmp/wellknowns"
+
+const syntaxVersion = -1000 + 13
+
+var loadConfig = &load.Config{
+	Context: build.NewContext(
+		build.ParseFile(func(name string, src interface{}) (*ast.File, error) {
+			return parser.ParseFile(name, src,
+				parser.FromVersion(syntaxVersion),
+				parser.ParseComments,
+			)
+		})),
+}
 
 type testCase struct {
 	Name       string
@@ -76,7 +92,7 @@ func generateCUEModule(protoRoot string, globs []string) ([]string, []*cue.Insta
 	instances := []*cue.Instance{}
 	// generate cue files
 	for _, protoFile := range protoFiles {
-		ins, err := generateCUEFile(moduleName, protoRoot, protoFile)
+		ins, _, err := generateCUEFile(moduleName, protoRoot, protoFile)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -88,69 +104,78 @@ func generateCUEModule(protoRoot string, globs []string) ([]string, []*cue.Insta
 	return cueImports, instances, nil
 }
 
-func generateCUEFile(moduleName, protoRoot, protoFile string) (*cue.Instance, error) {
+func generateCUEFile(moduleName, protoRoot, protoFile string) (*cue.Instance, string, error) {
 	p := protoFile
 	if !strings.HasPrefix(p, protoRoot) {
 		p = filepath.Join(protoRoot, protoFile)
 	}
-	fmt.Printf("generate cue file from: %s\n", p)
 
 	pkg, imports, err := extractProto(p)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
+	pkgDic := map[string]string{}
 	for _, imp := range imports {
 		_, ok := wellKnowns[imp]
 		if ok {
 			continue
 		}
 
-		_, err := generateCUEFile(moduleName, protoRoot, imp)
+		_, pkgName, err := generateCUEFile(moduleName, protoRoot, imp)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
+		pkgDic[strings.Split(pkgName, ";")[0]] = strings.Split(pkgName, ";")[1]
 	}
+	fmt.Printf("generate cue file from: %s\n", p)
 
 	cueFile, err := protobuf.Extract(p, nil, &protobuf.Config{
 		Paths: []string{protoRoot, wellKnownRoot},
 	})
 	if err != nil {
-		return nil, err
+		return nil, "", err
+	}
+
+	for _, imp := range cueFile.Imports {
+		impPath := strings.ReplaceAll(imp.Path.Value, "\"", "")
+		if pkgName, ok := pkgDic[impPath]; ok {
+			imp.Path.Value = fmt.Sprintf("\"%s:%s\"", impPath, pkgName)
+		}
 	}
 
 	if pkg == "" {
 		result, err := r.CompileFile(cueFile)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
-		return result, nil
+		return result, pkg, nil
 	}
 
 	outDir := strings.ReplaceAll(strings.Split(pkg, ";")[0], moduleName+"/", "")
 	err = os.MkdirAll(outDir, 0755)
 	if err != nil {
-		return nil, err
+		return nil, pkg, err
 	}
 
 	outPath := filepath.Join(outDir, filepath.Base(cueFile.Filename))
 	outFile, err := os.Create(outPath)
 	if err != nil {
-		return nil, err
+		return nil, pkg, err
 	}
 	defer outFile.Close()
 
 	b, err := format.Node(cueFile)
 	if err != nil {
-		return nil, err
+		return nil, pkg, err
 	}
 
 	_, err = outFile.Write(b)
 	if err != nil {
-		return nil, err
+		return nil, pkg, err
 	}
 
-	return nil, nil
+	return nil, pkg, nil
 }
 
 func generateModuleFiles(moduleName string) error {
@@ -199,13 +224,21 @@ func extractProto(filePath string) (pkgName string, imports []string, err error)
 }
 
 func readCueInstance(filename string) (*cue.Instance, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return nil, err
+	binsts := load.Instances([]string{filename}, loadConfig)
+	if len(binsts) == 0 {
+		return nil, fmt.Errorf("not found cue file")
 	}
-	defer file.Close()
 
-	return r.Compile(filename, file)
+	insts := []*cue.Instance{}
+	for _, binst := range binsts {
+		ins, err := r.Build(binst)
+		if err != nil {
+			return nil, err
+		}
+		insts = append(insts, ins)
+	}
+
+	return cue.Merge(insts...), nil
 }
 
 func downloadWellKnowns() error {
