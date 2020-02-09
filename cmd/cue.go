@@ -1,10 +1,6 @@
 package cmd
 
 import (
-	"cuelang.org/go/cue/ast"
-	"cuelang.org/go/cue/build"
-	"cuelang.org/go/cue/load"
-	"cuelang.org/go/cue/parser"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,6 +8,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"cuelang.org/go/cue/ast"
+	"cuelang.org/go/cue/build"
+	"cuelang.org/go/cue/load"
+	"cuelang.org/go/cue/parser"
 
 	"cuelang.org/go/cue/format"
 	"cuelang.org/go/encoding/protobuf"
@@ -51,30 +52,30 @@ type testCase struct {
 	Output     json.RawMessage
 }
 
-func generateCUEModule(protoRoot string, globs []string) ([]string, []*cue.Instance, error) {
+func generateCUEModule(protoRoot string, globs []string) ([]string, error) {
 	protoFiles := []string{}
 	for _, glob := range globs {
 		pFiles, err := zglob.Glob(glob)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		protoFiles = append(protoFiles, pFiles...)
 	}
 
 	if len(protoFiles) == 0 {
-		return nil, nil, fmt.Errorf("no protofiles")
+		return nil, fmt.Errorf("no protofiles")
 	}
 
 	err := downloadWellKnowns()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	cueImports := []string{}
 	for _, protoFile := range protoFiles {
 		pkg, _, err := extractProto(protoFile)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		cueImports = append(cueImports, strings.ReplaceAll(pkg, ";", ":"))
 	}
@@ -85,26 +86,22 @@ func generateCUEModule(protoRoot string, globs []string) ([]string, []*cue.Insta
 		moduleName = filepath.Join(mp...)
 		err := generateModuleFiles(moduleName)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 	}
 
-	instances := []*cue.Instance{}
 	// generate cue files
 	for _, protoFile := range protoFiles {
-		ins, _, err := generateCUEFile(moduleName, protoRoot, protoFile)
+		_, err := generateCUEFile(moduleName, protoRoot, protoFile)
 		if err != nil {
-			return nil, nil, err
-		}
-		if ins != nil {
-			instances = append(instances, ins)
+			return nil, err
 		}
 	}
 
-	return cueImports, instances, nil
+	return cueImports, nil
 }
 
-func generateCUEFile(moduleName, protoRoot, protoFile string) (*cue.Instance, string, error) {
+func generateCUEFile(moduleName, protoRoot, protoFile string) (string, error) {
 	p := protoFile
 	if !strings.HasPrefix(p, protoRoot) {
 		p = filepath.Join(protoRoot, protoFile)
@@ -112,7 +109,7 @@ func generateCUEFile(moduleName, protoRoot, protoFile string) (*cue.Instance, st
 
 	pkg, imports, err := extractProto(p)
 	if err != nil {
-		return nil, "", err
+		return "", err
 	}
 
 	pkgDic := map[string]string{}
@@ -122,9 +119,9 @@ func generateCUEFile(moduleName, protoRoot, protoFile string) (*cue.Instance, st
 			continue
 		}
 
-		_, pkgName, err := generateCUEFile(moduleName, protoRoot, imp)
+		pkgName, err := generateCUEFile(moduleName, protoRoot, imp)
 		if err != nil {
-			return nil, "", err
+			return "", err
 		}
 		pkgDic[strings.Split(pkgName, ";")[0]] = strings.Split(pkgName, ";")[1]
 	}
@@ -134,7 +131,7 @@ func generateCUEFile(moduleName, protoRoot, protoFile string) (*cue.Instance, st
 		Paths: []string{protoRoot, wellKnownRoot},
 	})
 	if err != nil {
-		return nil, "", err
+		return "", err
 	}
 
 	for _, imp := range cueFile.Imports {
@@ -144,38 +141,30 @@ func generateCUEFile(moduleName, protoRoot, protoFile string) (*cue.Instance, st
 		}
 	}
 
-	if pkg == "" {
-		result, err := r.CompileFile(cueFile)
-		if err != nil {
-			return nil, "", err
-		}
-		return result, pkg, nil
-	}
-
 	outDir := strings.ReplaceAll(strings.Split(pkg, ";")[0], moduleName+"/", "")
 	err = os.MkdirAll(outDir, 0755)
 	if err != nil {
-		return nil, pkg, err
+		return pkg, err
 	}
 
 	outPath := filepath.Join(outDir, filepath.Base(cueFile.Filename))
 	outFile, err := os.Create(outPath)
 	if err != nil {
-		return nil, pkg, err
+		return pkg, err
 	}
 	defer outFile.Close()
 
 	b, err := format.Node(cueFile)
 	if err != nil {
-		return nil, pkg, err
+		return pkg, err
 	}
 
 	_, err = outFile.Write(b)
 	if err != nil {
-		return nil, pkg, err
+		return pkg, err
 	}
 
-	return nil, pkg, nil
+	return pkg, nil
 }
 
 func generateModuleFiles(moduleName string) error {
