@@ -26,7 +26,17 @@ import (
 var r cue.Runtime
 
 var wellKnowns = map[string]string{
-	"google/protobuf/timestamp.proto": "https://raw.githubusercontent.com/protocolbuffers/protobuf/master/src/google/protobuf/timestamp.proto",
+	"google/protobuf/timestamp.proto":      "https://raw.githubusercontent.com/protocolbuffers/protobuf/master/src/google/protobuf/timestamp.proto",
+	"google/protobuf/any.proto":            "https://raw.githubusercontent.com/protocolbuffers/protobuf/master/src/google/protobuf/any.proto",
+	"google/protobuf/api.proto":            "https://raw.githubusercontent.com/protocolbuffers/protobuf/master/src/google/protobuf/api.proto",
+	"google/protobuf/descriptor.proto":     "https://raw.githubusercontent.com/protocolbuffers/protobuf/master/src/google/protobuf/descriptor.proto",
+	"google/protobuf/duration.proto":       "https://raw.githubusercontent.com/protocolbuffers/protobuf/master/src/google/protobuf/duration.proto",
+	"google/protobuf/empty.proto":          "https://raw.githubusercontent.com/protocolbuffers/protobuf/master/src/google/protobuf/empty.proto",
+	"google/protobuf/field_mask.proto":     "https://raw.githubusercontent.com/protocolbuffers/protobuf/master/src/google/protobuf/field_mask.proto",
+	"google/protobuf/source_context.proto": "https://raw.githubusercontent.com/protocolbuffers/protobuf/master/src/google/protobuf/source_context.proto",
+	"google/protobuf/struct.proto":         "https://raw.githubusercontent.com/protocolbuffers/protobuf/master/src/google/protobuf/struct.proto",
+	"google/protobuf/type.proto":           "https://raw.githubusercontent.com/protocolbuffers/protobuf/master/src/google/protobuf/type.proto",
+	"google/protobuf/wrappers.proto":       "https://raw.githubusercontent.com/protocolbuffers/protobuf/master/src/google/protobuf/wrappers.proto",
 }
 var wellKnownRoot = "./tmp/wellknowns"
 
