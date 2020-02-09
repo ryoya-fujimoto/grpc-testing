@@ -5,11 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"text/template"
 
-	"cuelang.org/go/cue"
-	"cuelang.org/go/cue/format"
 	"github.com/urfave/cli/v2"
 )
 
@@ -35,52 +32,36 @@ func Add(c *cli.Context) error {
 		return nil
 	}
 
-	err = os.MkdirAll(filepath.Dir(outPath), 0744)
-	if err != nil {
-		return err
-	}
-
-	tpl := template.New("schema")
-	tpl.Parse(testCaseSchema)
-	m := map[string]string{
-		"Name": targetName,
-	}
-	var base bytes.Buffer
-	_ = tpl.Execute(&base, m)
-
-	ins, err := r.Compile(targetName+".cue", base.String())
-	if err != nil {
-		return err
-	}
-
-	schemas, err := loadSchemasFromProto(protoRoot, protoFiles)
+	cueImports, err := generateCUEModule(protoRoot, protoFiles)
 	if err != nil {
 		if err.Error() == "no protofiles" {
 			fmt.Println("No protofiles. Will not generate schemas.")
 		} else {
 			return err
 		}
-	} else {
-		ins = cue.Merge(schemas, ins)
 	}
 
-	err = ins.Value().Validate()
+	tpl := template.New("schema")
+	tpl.Parse(testCaseSchema)
+	m := map[string]interface{}{
+		"Name":    targetName,
+		"Imports": cueImports,
+	}
+	var base bytes.Buffer
+	_ = tpl.Execute(&base, m)
+
+	err = ioutil.WriteFile(outPath, base.Bytes(), 0644)
 	if err != nil {
 		return err
 	}
-	op := cue.Raw()
-	b, _ := format.Node(ins.Value().Syntax(op))
 
-	err = ioutil.WriteFile(outPath, b, 0644)
-	if err != nil {
-		return err
-	}
 	fmt.Println("create:", outPath)
-
 	return nil
 }
 
-const testCaseSchema = `name: "{{.Name}}"
+const testCaseSchema = `{{range .Imports}}import "{{.}}"
+{{end}}
+name: "{{.Name}}"
 Input: {}
 Output: {}
 Test :: {

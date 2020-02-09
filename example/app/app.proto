@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "pb";
+option go_package = "github.com/ryoya-fujimoto/grpc-testing/example/app";
 
 service UserService {
   rpc CreateUser(CreateUserRequest) returns (User) {}
