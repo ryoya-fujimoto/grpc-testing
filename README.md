@@ -9,7 +9,7 @@ notice: This tool is a in progress.
 ### install
 
 ```bash
-go get github.com/ryoya-fujimoto/grpc-testing
+go get -u github.com/ryoya-fujimoto/grpc-testing
 ```
 
 ### Generate test file
@@ -17,81 +17,68 @@ go get github.com/ryoya-fujimoto/grpc-testing
 First, create a test file using grpc-testing.
 
 ```bash
-grpc-testing add tests/first_test
+grpc-testing add tests/FirstTest
 ```
 
-`first_test` is the test file name. This command generate cuelang file like this.
+`FirstTest` is the test file name. This command generate cuelang file like this.
 
-tests/first_test.cue
+tests/FirstTest.cue
+
 ```
-{
-	name: "first_test"
-	Input: {
-	}
-	Output: {
-	}
-	Test :: {
-		name:         string
-		method:       string
-		proto?: [...string]
-		import_path?: [...string]
-		input:        Input
-		output:       Output
-	}
-	cases: [...Test] & [{
-		name:   ""
-		method: ""
-		input: {
-		}
-		output: {
-		}
-	}]
+name: "FirstTest2"
+Input: {}
+Output: {}
+Test :: {
+	name: string
+	method: string
+	proto?: [...string]
+	import_path?: [...string]
+	headers?: [string]: string
+	input: Input
+	output: Output
 }
+cases: [...Test] & [
+	{
+		name: ""
+		method: ""
+		input: {}
+		output: {}
+	},
+]
 ```
 
 `cases` is a test cases. You can add grpc test case to this list.
 The `add` command can specify protobuf files, and when specified, generate cue file is merged protobuf schemas.
 
 ```bash
-grpc-testing add --proto_path example/app --protofiles example/app/*.proto FirstTest
+grpc-testing add --proto_path example/app --protofiles example/app/*.proto tests/FirstTest
 ```
 
 This command generate below cue file.
 
 ```
-{
-	name: "first_test"
-	Input: {
-	}
-	Output: {
-	}
-	Test :: {
-		name:         string
-		method:       string
-		proto?: [...string]
-		import_path?: [...string]
-		input:        Input
-		output:       Output
-	}
-	cases: [...Test] & [{
-		name:   ""
-		method: ""
-		input: {
-		}
-		output: {
-		}
-	}]
-	GetUserRequest: {
-		id?: uint64 @protobuf(1)
-	}
-	CreateUserRequest: {
-		name?: string @protobuf(1)
-	}
-	User: {
-		name?: string @protobuf(2)
-		id?:   uint64 @protobuf(1)
-	}
+import "github.com/ryoya-fujimoto/grpc-testing/example/app"
+
+name: "FirstTest"
+Input: {}
+Output: {}
+Test :: {
+	name: string
+	method: string
+	proto?: [...string]
+	import_path?: [...string]
+	headers?: [string]: string
+	input: Input
+	output: Output
 }
+cases: [...Test] & [
+	{
+		name: ""
+		method: ""
+		input: {}
+		output: {}
+	},
+]
 ```
 
 ### Test your grpc server
@@ -102,23 +89,23 @@ Edit your test case file for testing grpc server, like below (write cases param 
 cases: [...Test] & [{
 	name:   "GetUser"
 	method: "UserService.GetUser"
-	input: GetUserRequest & {
+	input: app.GetUserRequest & {
 		id: 5
  	}
  	output: {
-		id: 5
+		id: "5"
 		name: "John Smith"
 	}
 }]
 ```
 
-Now, you can request to grpc server using input object. 
+Now, you can request to grpc server using input object.
 
 `grpc-testing run` prints response from server.
 
 ```bash
-$ grpc-testing run localhost:8080 tests/first_test.cue
-tests/first_test.cue
+$ grpc-testing run localhost:8080 tests/FirstTest.cue
+tests/FirstTest.cue
         test name: GetUser
         method: UserService.GetUser
         output: {
@@ -128,9 +115,10 @@ tests/first_test.cue
 ```
 
 `grpc-testing test` compares between response and output parameter.
+
 ```bash
-$ grpc-testing test localhost:8080 tests/first_test.cue
-tests/first_test.cue
+$ grpc-testing test localhost:8080 tests/FirstTest.cue
+tests/FirstTest.cue
         OK: GetUser
 ```
 
@@ -146,11 +134,11 @@ cases: [...Test] & [{
 	method: "UserService.GetUser"
 	proto: ["./example/app/app.proto"]
 	import_path: ["./example/app/"]
-	input: GetUserRequest & {
+	input: app.GetUserRequest & {
 		id: 5
 	}
 	output: {
-		id: 5
+		id: "5"
 		name: "John Smith"
 	}
 }]
