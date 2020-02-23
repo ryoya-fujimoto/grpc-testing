@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"text/template"
 
 	"github.com/urfave/cli/v2"
@@ -49,6 +50,11 @@ func Add(c *cli.Context) error {
 	}
 	var base bytes.Buffer
 	_ = tpl.Execute(&base, m)
+
+	err = os.MkdirAll(filepath.Dir(outPath), 0755)
+	if err != nil {
+		return err
+	}
 
 	err = ioutil.WriteFile(outPath, base.Bytes(), 0644)
 	if err != nil {
