@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/google/go-cmp/cmp"
+
 	"github.com/mattn/go-zglob"
 
 	"github.com/kylelemons/godebug/pretty"
@@ -94,6 +96,9 @@ func test(serverHost, testFile, testName string) ([]string, error) {
 			return nil, err
 		}
 
+		diff := compareResult(expectJSON, resJSON)
+		fmt.Println("diff:", diff)
+
 		if !reflect.DeepEqual(expectJSON, resJSON) {
 			ej, _ := json.Marshal(expectJSON)
 			rj, _ := json.Marshal(resJSON)
@@ -105,4 +110,26 @@ func test(serverHost, testFile, testName string) ([]string, error) {
 	}
 
 	return errs, nil
+}
+
+func compareResult(expect, result map[string]interface{}) string {
+	mapComparer := cmp.Comparer(func(x, y map[string]interface{}) bool {
+		for key := range x {
+			if _, ok := y[key]; !ok {
+				delete(x, key)
+			}
+		}
+		for key := range y {
+			if _, ok := x[key]; !ok {
+				delete(y, key)
+			}
+		}
+
+		return cmp.Equal(x, y)
+	})
+	filter := cmp.FilterValues(func(x, y map[string]interface{}) bool {
+		return len(x) != len(y)
+	}, mapComparer)
+
+	return cmp.Diff(expect, result, cmp.AllowUnexported(), filter)
 }

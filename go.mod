@@ -6,6 +6,7 @@ require (
 	cuelang.org/go v0.0.15
 	github.com/emicklei/proto v1.9.0
 	github.com/fullstorydev/grpcurl v1.4.0
+	github.com/google/go-cmp v0.4.0
 	github.com/jhump/protoreflect v1.5.0
 	github.com/kylelemons/godebug v1.1.0
 	github.com/mattn/go-zglob v0.0.1
