@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
 
 	"github.com/google/go-cmp/cmp"
 
@@ -96,10 +95,7 @@ func test(serverHost, testFile, testName string) ([]string, error) {
 			return nil, err
 		}
 
-		diff := compareResult(expectJSON, resJSON)
-		fmt.Println("diff:", diff)
-
-		if !reflect.DeepEqual(expectJSON, resJSON) {
+		if diff := compareResult(expectJSON, resJSON); diff != "" {
 			ej, _ := json.Marshal(expectJSON)
 			rj, _ := json.Marshal(resJSON)
 			errs = append(errs, fmt.Sprintf("expect: %s, but: %s", string(ej), string(rj)))
@@ -131,5 +127,5 @@ func compareResult(expect, result map[string]interface{}) string {
 		return len(x) != len(y)
 	}, mapComparer)
 
-	return cmp.Diff(expect, result, cmp.AllowUnexported(), filter)
+	return cmp.Diff(expect, result, filter)
 }
