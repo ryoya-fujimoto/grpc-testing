@@ -29,6 +29,7 @@ func Test(c *cli.Context) error {
 		cli.ShowCommandHelpAndExit(c, "run", 1)
 		return nil
 	}
+	headers := extractHeaders(c.StringSlice("header"))
 	testFiles, err := zglob.Glob(c.Args().Get(1))
 	if err != nil {
 		return err
@@ -41,7 +42,7 @@ func Test(c *cli.Context) error {
 
 	errs := []string{}
 	for _, testFile := range testFiles {
-		testFails, err := test(serverName, testFile, targetTestName)
+		testFails, err := test(serverName, testFile, targetTestName, headers)
 		if err != nil {
 			return err
 		}
@@ -54,7 +55,7 @@ func Test(c *cli.Context) error {
 	return nil
 }
 
-func test(serverHost, testFile, testName string) ([]string, error) {
+func test(serverHost, testFile, testName string, headers map[string]string) ([]string, error) {
 	ins, err := readCueInstance(testFile)
 	if err != nil {
 		return nil, err
@@ -82,8 +83,10 @@ func test(serverHost, testFile, testName string) ([]string, error) {
 			tName = c.Method
 		}
 
+		h := mergeMap(headers, c.Headers)
+
 		res := &bytes.Buffer{}
-		invokeRPC(context.Background(), serverHost, c.Method, c.Headers, c.Proto, c.ImportPath, c.Input, res)
+		invokeRPC(context.Background(), serverHost, c.Method, h, c.Proto, c.ImportPath, c.Input, res)
 
 		expectJSON := map[string]interface{}{}
 		resJSON := map[string]interface{}{}

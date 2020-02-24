@@ -41,14 +41,24 @@ func main() {
 			Usage:     "Requests grpc to server using input in test case file, and output response.",
 			Action:    cmd.Run,
 			ArgsUsage: "`hostname` `test file(can use glob)` `[(optional) test name]`",
-			Flags:     []cli.Flag{},
+			Flags: []cli.Flag{
+				&cli.StringSliceFlag{
+					Name:  "header",
+					Usage: "Additional RPC headers in 'name: value' format.",
+				},
+			},
 		},
 		{
 			Name:      "test",
 			Usage:     "Requests grpc to server using input in test case file, and compare between response and output parameter.",
 			Action:    cmd.Test,
 			ArgsUsage: "`hostname` `test file(can use glob)` `[(optional) test name]`",
-			Flags:     []cli.Flag{},
+			Flags: []cli.Flag{
+				&cli.StringSliceFlag{
+					Name:  "header",
+					Usage: "Additional RPC headers in 'name: value' format.",
+				},
+			},
 		},
 	}
 

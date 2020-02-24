@@ -25,6 +25,7 @@ func Run(c *cli.Context) error {
 		cli.ShowCommandHelpAndExit(c, "run", 1)
 		return nil
 	}
+	headers := extractHeaders(c.StringSlice("header"))
 	testFiles, err := zglob.Glob(c.Args().Get(1))
 	if err != nil {
 		return err
@@ -36,7 +37,7 @@ func Run(c *cli.Context) error {
 	}
 
 	for _, testFile := range testFiles {
-		if err := run(serverName, testFile, targetTestName); err != nil {
+		if err := run(serverName, testFile, targetTestName, headers); err != nil {
 			return err
 		}
 	}
@@ -44,7 +45,7 @@ func Run(c *cli.Context) error {
 	return nil
 }
 
-func run(serverHost, testFile, testName string) error {
+func run(serverHost, testFile, testName string, headers map[string]string) error {
 	ins, err := readCueInstance(testFile)
 	if err != nil {
 		return err
@@ -69,8 +70,10 @@ func run(serverHost, testFile, testName string) error {
 		fmt.Printf("\ttest name: %s\n", c.Name)
 		fmt.Printf("\tmethod: %s\n", c.Method)
 
+		h := mergeMap(headers, c.Headers)
+
 		res := &bytes.Buffer{}
-		err = invokeRPC(context.Background(), serverHost, c.Method, c.Headers, c.Proto, c.ImportPath, c.Input, res)
+		err = invokeRPC(context.Background(), serverHost, c.Method, h, c.Proto, c.ImportPath, c.Input, res)
 		if err != nil {
 			return fmt.Errorf("invoke grpc: %w", err)
 		}
