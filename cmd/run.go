@@ -52,7 +52,7 @@ func run(serverHost, testFile, testName string, headers map[string]string) error
 	}
 
 	insVal, _ := ins.Value().Struct()
-	cases, _ := insVal.FieldByName("cases")
+	cases, _ := insVal.FieldByName("cases", false)
 
 	codec := gocodec.New(&r, &gocodec.Config{})
 
