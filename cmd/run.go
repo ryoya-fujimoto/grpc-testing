@@ -67,13 +67,61 @@ func run(serverHost, testFile, testName string, headers map[string]string) error
 		if testName != "" && testName != c.Name {
 			continue
 		}
-		fmt.Printf("\ttest name: %s\n", c.Name)
-		fmt.Printf("\tmethod: %s\n", c.Method)
 
 		h := mergeMap(headers, c.Headers)
 
+		testList := []testData{}
+		for _, td := range c.Tests {
+			testList = append(testList, testData{
+				name:    c.Name,
+				method:  c.Method,
+				headers: h,
+				input:   td.Input,
+				output:  td.Output,
+			})
+		}
+
+		if len(testList) == 0 {
+			testList = append(testList, testData{
+				name:    c.Name,
+				method:  c.Method,
+				headers: h,
+				input:   c.Input,
+				output:  c.Output,
+			})
+		}
+
+		err := runList(
+			context.Background(),
+			serverHost,
+			c.Proto,
+			c.ImportPath,
+			testList,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func runList(ctx context.Context, serverHost string, proto, importPath []string, tdList []testData) error {
+	for _, td := range tdList {
+		fmt.Printf("\ttest name: %s\n", td.name)
+		fmt.Printf("\tmethod: %s\n", td.method)
+
 		res := &bytes.Buffer{}
-		err = invokeRPC(context.Background(), serverHost, c.Method, h, c.Proto, c.ImportPath, c.Input, res)
+
+		err := invokeRPC(
+			context.Background(),
+			serverHost,
+			td.method,
+			td.headers,
+			proto,
+			importPath,
+			td.input,
+			res)
 		if err != nil {
 			return fmt.Errorf("invoke grpc: %w", err)
 		}

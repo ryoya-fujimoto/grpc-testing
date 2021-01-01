@@ -28,21 +28,28 @@ tests/FirstTest.cue
 name: "FirstTest2"
 Input: {}
 Output: {}
+TestCase :: {
+	input: Input
+	output: Output
+}
 Test :: {
 	name: string
 	method: string
 	proto?: [...string]
 	import_path?: [...string]
 	headers?: [string]: string
-	input: Input
-	output: Output
+	input?: Input
+	output?: Output
+	tests?: [...TestCase]
 }
 cases: [...Test] & [
 	{
 		name: ""
 		method: ""
-		input: {}
-		output: {}
+		tests: [
+			input: {}
+			output: {}
+		]
 	},
 ]
 ```
@@ -62,21 +69,28 @@ import "github.com/ryoya-fujimoto/grpc-testing/example/app"
 name: "FirstTest"
 Input: {}
 Output: {}
+TestCase :: {
+	input: Input
+	output: Output
+}
 Test :: {
 	name: string
 	method: string
 	proto?: [...string]
 	import_path?: [...string]
 	headers?: [string]: string
-	input: Input
-	output: Output
+	input?: Input
+	output?: Output
+	tests?: [...TestCase]
 }
 cases: [...Test] & [
 	{
 		name: ""
 		method: ""
-		input: {}
-		output: {}
+		tests: [
+			input: {}
+			output: {}
+		]
 	},
 ]
 ```

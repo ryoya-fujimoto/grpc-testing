@@ -85,13 +85,54 @@ func test(serverHost, testFile, testName string, headers map[string]string) ([]s
 
 		h := mergeMap(headers, c.Headers)
 
+		tl := []testData{}
+		for _, td := range c.Tests {
+			tl = append(tl, testData{
+				name:    tName,
+				method:  c.Method,
+				headers: h,
+				input:   td.Input,
+				output:  td.Output,
+			})
+		}
+
+		if len(tl) == 0 {
+			tl = append(tl, testData{
+				name:    tName,
+				method:  c.Method,
+				headers: h,
+				input:   c.Input,
+				output:  c.Output,
+			})
+		}
+
+		es, err := testList(
+			context.Background(),
+			serverHost,
+			c.Proto,
+			c.ImportPath,
+			tl,
+		)
+		if err != nil {
+			return nil, err
+		}
+		errs = append(errs, es...)
+	}
+
+	return errs, nil
+}
+
+func testList(ctx context.Context, serverHost string, proto, importPath []string, tdList []testData) ([]string, error) {
+	errs := []string{}
+
+	for _, td := range tdList {
 		res := &bytes.Buffer{}
-		invokeRPC(context.Background(), serverHost, c.Method, h, c.Proto, c.ImportPath, c.Input, res)
+		invokeRPC(ctx, serverHost, td.method, td.headers, proto, importPath, td.input, res)
 
 		expectJSON := map[string]interface{}{}
 		resJSON := map[string]interface{}{}
 
-		if err := json.Unmarshal(c.Output, &expectJSON); err != nil {
+		if err := json.Unmarshal(td.output, &expectJSON); err != nil {
 			return nil, err
 		}
 		if err := json.Unmarshal(res.Bytes(), &resJSON); err != nil {
@@ -102,9 +143,9 @@ func test(serverHost, testFile, testName string, headers map[string]string) ([]s
 			ej, _ := json.Marshal(expectJSON)
 			rj, _ := json.Marshal(resJSON)
 			errs = append(errs, fmt.Sprintf("expect: %s, but: %s", string(ej), string(rj)))
-			fmt.Printf("\tNG: %s\n\t\t%s\n", tName, addTabToNewline(pretty.Compare(expectJSON, resJSON), 2))
+			fmt.Printf("\tNG: %s\n\t\t%s\n", td.name, addTabToNewline(pretty.Compare(expectJSON, resJSON), 2))
 		} else {
-			fmt.Printf("\tOK: %s\n", tName)
+			fmt.Printf("\tOK: %s\n", td.name)
 		}
 	}
 

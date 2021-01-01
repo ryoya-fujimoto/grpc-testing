@@ -70,21 +70,30 @@ const testCaseSchema = `{{range .Imports}}import "{{.}}"
 name: "{{.Name}}"
 Input: {}
 Output: {}
+TestCase :: {
+	input: Input
+	output: Output
+}
 Test :: {
 	name: string
 	method: string
 	proto?: [...string]
 	import_path?: [...string]
 	headers?: [string]: string
-	input: Input
-	output: Output
+	input?: Input
+	output?: Output
+	tests?: [...TestCase]
 }
 cases: [...Test] & [
 	{
 		name: ""
 		method: ""
-		input: {}
-		output: {}
+		tests: [
+			{
+				input: {}
+				output: {}
+			}
+		]
 	},
 ]
 `
