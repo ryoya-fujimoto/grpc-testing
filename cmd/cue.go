@@ -52,6 +52,10 @@ var loadConfig = &load.Config{
 		})),
 }
 
+type testInput struct {
+	Input  json.RawMessage
+	Output json.RawMessage
+}
 type testCase struct {
 	Name       string
 	Method     string
@@ -60,6 +64,14 @@ type testCase struct {
 	Headers    map[string]string
 	Input      json.RawMessage
 	Output     json.RawMessage
+	Tests      []testInput
+}
+type testData struct {
+	name    string
+	method  string
+	headers map[string]string
+	input   json.RawMessage
+	output  json.RawMessage
 }
 
 func generateCUEModule(protoRoot string, globs []string) ([]string, error) {
