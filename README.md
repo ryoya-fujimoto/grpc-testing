@@ -103,7 +103,7 @@ Edit your test case file for testing grpc server, like below (write cases param 
 cases: [...Test] & [{
 	name:   "GetUser"
 	method: "UserService.GetUser"
-	input: app.GetUserRequest & {
+	input: app.#GetUserRequest & {
 		id: 5
  	}
  	output: {
