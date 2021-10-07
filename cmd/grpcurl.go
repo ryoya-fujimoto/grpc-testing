@@ -18,6 +18,8 @@ import (
 	reflectpb "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 )
 
+type responseError error
+
 func invokeRPC(ctx context.Context, serverName, methodName string, headers map[string]string, protoFiles, importPath multiString, reqData []byte, res io.Writer) error {
 	dial := func() *grpc.ClientConn {
 		var creds credentials.TransportCredentials
@@ -82,7 +84,7 @@ func invokeRPC(ctx context.Context, serverName, methodName string, headers map[s
 
 	if h.Status.Code() != codes.OK {
 		grpcurl.PrintStatus(os.Stderr, h.Status, formatter)
-		return fmt.Errorf("invalid response code: %s", h.Status.Code().String())
+		return responseError(fmt.Errorf("invalid response code: %s (message: %s)", h.Status.Code().String(), h.Status.Message()))
 	}
 
 	return nil

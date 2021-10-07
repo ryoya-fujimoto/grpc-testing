@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/google/go-cmp/cmp"
@@ -127,7 +128,18 @@ func testList(ctx context.Context, serverHost string, proto, importPath []string
 
 	for _, td := range tdList {
 		res := &bytes.Buffer{}
-		invokeRPC(ctx, serverHost, td.method, td.headers, proto, importPath, td.input, res)
+
+		if err := invokeRPC(ctx, serverHost, td.method, td.headers, proto, importPath, td.input, res); err != nil {
+			var rErr responseError
+			if errors.As(err, &rErr) {
+				errs = append(errs, err.Error())
+				fmt.Printf("\tNG: %s\n\t\t%v\n", td.name, err)
+
+				continue
+			}
+
+			return nil, err
+		}
 
 		expectJSON := map[string]interface{}{}
 		resJSON := map[string]interface{}{}
